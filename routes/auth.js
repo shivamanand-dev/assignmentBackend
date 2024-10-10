@@ -8,6 +8,7 @@ const bcrypt = require("bcryptjs");
 var jwt = require("jsonwebtoken");
 
 const User = require("../models/auth/User");
+const getUser = require("../middleware/getUser");
 
 router.post(
   "/register",
@@ -97,18 +98,115 @@ router.post("/login", async (req, res) => {
 
     let userDetails = await User.findOne({ email });
 
-    res
-      .status(201)
-      .json({
-        success,
-        authToken,
-        userDetails,
-        message: "User logged in successfully",
-      });
+    res.status(201).json({
+      success,
+      authToken,
+      userDetails,
+      message: "User logged in successfully",
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+router.put(
+  "/edit",
+  [
+    body("name", "Name cannot be blank").optional().notEmpty(),
+    body("phone", "Phone cannot be blank").optional().notEmpty(),
+    body("profession", "Profession cannot be blank").optional().notEmpty(),
+  ],
+  getUser,
+  async (req, res) => {
+    let success = false;
+
+    const { name, phone, profession } = req.body;
+    const userId = req.user.id;
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success, errors: errors.array() });
+    }
+
+    try {
+      let user = await User.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({ success, message: "User not found" });
+      }
+
+      if (name) user.name = name;
+      if (phone) user.phone = phone;
+      if (profession) user.profession = profession;
+
+      await user.save();
+
+      success = true;
+      res.status(200).json({
+        success,
+        user,
+        message: "User details updated successfully",
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+);
+
+router.get("/users", async (req, res) => {
+  try {
+    const users = await User.find();
+    res.status(200).json({ success: true, users });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+});
+
+router.put(
+  "/editByEmail",
+  [
+    body("email", "Enter correct email").isEmail(),
+    body("name", "Name cannot be blank").optional().notEmpty(),
+    body("phone", "Phone cannot be blank").optional().notEmpty(),
+    body("profession", "Profession cannot be blank").optional().notEmpty(),
+  ],
+  async (req, res) => {
+    let success = false;
+
+    const { email, name, phone, profession } = req.body;
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success, errors: errors.array() });
+    }
+
+    try {
+      let user = await User.findOne({ email });
+
+      if (!user) {
+        return res.status(404).json({ success, message: "User not found" });
+      }
+
+      if (name) user.name = name;
+      if (phone) user.phone = phone;
+      if (profession) user.profession = profession;
+
+      await user.save();
+
+      success = true;
+      res.status(200).json({
+        success,
+        user,
+        message: "User details updated successfully",
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+);
 
 module.exports = router;
