@@ -11,31 +11,18 @@ const UserSchema = new Schema({
     required: true,
     unique: true,
   },
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-  },
   password: {
     type: String,
     required: true,
     select: false,
   },
-  followers: {
-    type: Array,
-    default: [],
-  },
-  following: {
-    type: Array,
-    default: [],
-  },
-  liveCountry: {
+  phone: {
     type: String,
-    default: "",
+    required: true,
   },
-  profileImageUrl: {
+  profession: {
     type: String,
-    default: "",
+    required: true,
   },
 });
 
